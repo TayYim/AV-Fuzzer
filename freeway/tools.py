@@ -1,15 +1,17 @@
-#! /usr/bin/python3 
+#! /usr/bin/python3
 
-import os, math
+import os
+import math
 import pickle
 import sys
-from Chromosome import Chromosome   
+from Chromosome import Chromosome
 from os import listdir
 from os.path import isfile, join
-from os import walk   
-import numpy as np                                                                              
+from os import walk
+import numpy as np
 
-######################################################################################3
+# 3
+
 
 def getSimilarityBetweenNpcs(npc1, npc2):
     accumD = 0.0
@@ -26,7 +28,7 @@ def getSimilarityBetweenNpcs(npc1, npc2):
     for i in range(len(npc1)):
         v1 += npc1[i][0]
         v2 += npc2[i][0]
-        a1 = npc1[i][1] 
+        a1 = npc1[i][1]
         a2 = npc2[i][1]
 
         if a1 == 1:
@@ -45,8 +47,9 @@ def getSimilarityBetweenNpcs(npc1, npc2):
         curED = math.sqrt(math.pow(v1 - v2, 2) + math.pow(horD1 - horD2, 2))
         accumD += curED
 
-    return accumD 
+    return accumD
 ######################################################################################
+
 
 def getSimilaritybetweenScenarios(scenario1, scenario2):
 
@@ -63,6 +66,4 @@ def getSimilaritybetweenScenarios(scenario1, scenario2):
 
     return scenarioNpc/npcSize
 
-###################################################################################### 
-
-    
+######################################################################################

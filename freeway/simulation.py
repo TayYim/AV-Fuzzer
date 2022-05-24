@@ -7,13 +7,13 @@ import time
 import math
 import random
 import pickle
-from sympy import Point3D, Line3D, Segment3D, Point2D, Line2D, Segment2D	
+# from sympy import Point3D, Line3D, Segment3D, Point2D, Line2D, Segment2D
 import liability
 from datetime import datetime
 import util
 import copy
 
-     
+
 class LgApSimulation:
 
     def __init__(self):
@@ -21,10 +21,10 @@ class LgApSimulation:
         self.totalSimTime = 15
         self.bridgeLogPath = "/home/av-input/Workplace/apollo-lg/apollo-3.5/data/log/cyber_bridge.INFO"
         ################################################################
-        self.sim = None 
-        self.ego = None # There is only one ego
+        self.sim = None
+        self.ego = None  # There is only one ego
         self.initEvPos = lgsvl.Vector(1699, 88.38, -607.9)
-        self.npcList = [] # The list contains all the npc added
+        self.npcList = []  # The list contains all the npc added
         self.initSimulator()
         self.loadMap()
         self.initEV()
@@ -35,21 +35,23 @@ class LgApSimulation:
         self.egoFaultDeltaD = 0
 
     def initSimulator(self):
-        sim = lgsvl.Simulator(os.environ.get("SIMULATOR_HOST", "127.0.0.1"), 8181) 
+        sim = lgsvl.Simulator(os.environ.get(
+            "SIMULATOR_HOST", "127.0.0.1"), 8181)
         self.sim = sim
 
     def loadMap(self, mapName="SanFrancisco"):
         sim = self.sim
         if sim.current_scene == mapName:
-           sim.reset()
+            sim.reset()
         else:
-           sim.load(mapName)
+            sim.load(mapName)
 
     def initEV(self):
         sim = self.sim
         egoState = lgsvl.AgentState()
         egoState.transform = sim.map_point_on_lane(self.initEvPos)
-        ego = sim.add_agent("XE_Rigged-apollo_3_5", lgsvl.AgentType.EGO, egoState)
+        ego = sim.add_agent("XE_Rigged-apollo_3_5",
+                            lgsvl.AgentType.EGO, egoState)
         sensors = ego.get_sensors()
         for s in sensors:
             if s.name in ['velodyne', 'Main Camera', 'Telephoto Camera', 'GPS', 'IMU']:
@@ -101,14 +103,16 @@ class LgApSimulation:
         if dBrake < 0:
             dBrake = 0
         return dBrake
-    
+
     def findCollisionDeltaD(self, ego, npc):
-        d = liability.findDistance(ego, npc) - 4.6 # 4.6 is the length of a car
+        # 4.6 is the length of a car
+        d = liability.findDistance(ego, npc) - 4.6
         return d - self.brakeDist(ego.state.speed)
 
     def findDeltaD(self, ego, npc):
-        d = liability.findDistance(ego, npc) - 4.6 # 4.6 is the length of a car
-        deltaD = self.maxint # The smaller delta D, the better
+        # 4.6 is the length of a car
+        d = liability.findDistance(ego, npc) - 4.6
+        deltaD = self.maxint  # The smaller delta D, the better
         deltaDFront = self.maxint
         deltaDSide = self.maxint
 
@@ -123,41 +127,41 @@ class LgApSimulation:
             if npc.state.transform.position.z + 2 > ego.state.transform.position.z and npc.state.transform.position.z - 2 < ego.state.transform.position.z and (ego.state.rotation.y < 269 or ego.state.rotation.y > 271):
                 deltaDSide = d - self.brakeDist(npc.state.speed)
                 util.print_debug(" --- Delta D Side: " + str(deltaDSide))
-   
+
         deltaD = min(deltaDSide, deltaDFront)
 
         return deltaD
 
     def findFitness(self, deltaDlist, dList, isEgoFault, isHit, hitTime):
-       # The higher the fitness, the better.
+        # The higher the fitness, the better.
 
-       minDeltaD = self.maxint
-       for npc in deltaDlist: # ith NPC
+        minDeltaD = self.maxint
+        for npc in deltaDlist:  # ith NPC
             hitCounter = 0
             for deltaD in npc:
                 if isHit == True and hitCounter == hitTime:
-                   break
+                    break
                 if deltaD < minDeltaD:
-                    minDeltaD = deltaD # Find the min deltaD over time slices for each NPC as the fitness
+                    minDeltaD = deltaD  # Find the min deltaD over time slices for each NPC as the fitness
                 hitCounter += 1
-       util.print_debug(deltaDlist)
-       util.print_debug(" *** minDeltaD is " + str(minDeltaD) + " *** ")
+        util.print_debug(deltaDlist)
+        util.print_debug(" *** minDeltaD is " + str(minDeltaD) + " *** ")
 
-       minD = self.maxint
-       for npc in dList: # ith NPC
+        minD = self.maxint
+        for npc in dList:  # ith NPC
             hitCounter = 0
             for d in npc:
                 if isHit == True and hitCounter == hitTime:
-                   break
+                    break
                 if d < minD:
                     minD = d
                 hitCounter += 1
-       util.print_debug(dList)
-       util.print_debug(" *** minD is " + str(minD) + " *** ")
+        util.print_debug(dList)
+        util.print_debug(" *** minD is " + str(minD) + " *** ")
 
-       fitness = 0.5 * minD + 0.5 * minDeltaD
+        fitness = 0.5 * minD + 0.5 * minDeltaD
 
-       return fitness * -1
+        return fitness * -1
 
     def runSimulation(self, scenarioObj):
 
@@ -170,8 +174,10 @@ class LgApSimulation:
         init_degree = ego.state.rotation.y
         numOfTimeSlice = len(scenarioObj[0])
         numOfNpc = len(scenarioObj)
-        deltaDList = [[self.maxint for i in range(numOfTimeSlice)] for j in range(numOfNpc)] # 1-D: NPC; 2-D: Time Slice
-        dList = [[self.maxint for i in range(numOfTimeSlice)] for j in range(numOfNpc)] # 1-D: NPC; 2-D: Time Slice
+        deltaDList = [[self.maxint for i in range(numOfTimeSlice)] for j in range(
+            numOfNpc)]  # 1-D: NPC; 2-D: Time Slice
+        dList = [[self.maxint for i in range(numOfTimeSlice)] for j in range(
+            numOfNpc)]  # 1-D: NPC; 2-D: Time Slice
         spawns = sim.get_spawn()
 
         # Add NPCs: Hard code for now, the number of npc need to be consistent.
@@ -182,15 +188,15 @@ class LgApSimulation:
         ################################################################
 
         for npc in npcList:
-            npc.follow_closest_lane(True, random.randint(1,9))
-        
+            npc.follow_closest_lane(True, random.randint(1, 9))
+
         self.isEgoFault = False
         self.isHit = False
 
         def on_collision(agent1, agent2, contact):
             #util.print_debug(" --- On Collision, ego speed: " + str(agent1.state.speed) + ", NPC speed: " + str(agent2.state.speed))
             if self.isHit == True:
-               return
+                return
             self.isHit = True
             if agent2 is None or agent1 is None:
                 self.isEgoFault = True
@@ -200,33 +206,37 @@ class LgApSimulation:
             apollo = agent1
             npcVehicle = agent2
             if agent2.name == "XE_Rigged-apollo_3_5":
-            	apollo = agent2
-            	npcVehicle = agent1
-            util.print_debug(" --- On Collision, ego speed: " + str(apollo.state.speed) + ", NPC speed: " + str(npcVehicle.state.speed))
+                apollo = agent2
+                npcVehicle = agent1
+            util.print_debug(" --- On Collision, ego speed: " + str(
+                apollo.state.speed) + ", NPC speed: " + str(npcVehicle.state.speed))
             if apollo.state.speed <= 0.005:
-               self.isEgoFault = False
-               return 
-            self.isEgoFault = liability.isEgoFault(apollo, npcVehicle, sim, init_degree)
+                self.isEgoFault = False
+                return
+            self.isEgoFault = liability.isEgoFault(
+                apollo, npcVehicle, sim, init_degree)
             # Compute deltaD when it is ego fault
             if self.isEgoFault == True:
-                self.egoFaultDeltaD = self.findCollisionDeltaD(apollo, npcVehicle)
-                util.print_debug(" >>>>>>> Ego fault delta D is " + str(self.egoFaultDeltaD))
-                    
+                self.egoFaultDeltaD = self.findCollisionDeltaD(
+                    apollo, npcVehicle)
+                util.print_debug(
+                    " >>>>>>> Ego fault delta D is " + str(self.egoFaultDeltaD))
+
         ego.on_collision(on_collision)
 
         # Frequency of action change of NPCs
         totalSimTime = self.totalSimTime
         actionChangeFreq = totalSimTime/numOfTimeSlice
         hitTime = numOfNpc
-        
+
         for t in range(0, int(numOfTimeSlice)):
             # For every npc
 
             i = 0
-            for npc in npcList:	
+            for npc in npcList:
                 self.setNpcSpeed(npc, scenarioObj[i][t][0])
                 turnCommand = scenarioObj[i][t][1]
-                #<0: no turn; 1: left; 2: right>
+                # <0: no turn; 1: left; 2: right>
                 if turnCommand == 1:
                     direction = "LEFT"
                     self.setNpcChangeLane(npc, direction)
@@ -237,11 +247,11 @@ class LgApSimulation:
 
             # Stop if there is accident
             if self.isEgoFault == True or liability.isHitEdge(ego, sim, init_degree):
-               self.isHit = True
-               self.isEgoFault = True
+                self.isHit = True
+                self.isEgoFault = True
             if self.isHit == True:
-               hitTime = t
-               break
+                hitTime = t
+                break
 
             # Record the min delta D and d
             minDeltaD = self.maxint
@@ -249,7 +259,7 @@ class LgApSimulation:
             minD = self.maxint
             npcDAtTList = [0 for i in range(numOfNpc)]
             for j in range(0, int(actionChangeFreq) * 4):
-                k = 0 # k th npc
+                k = 0  # k th npc
                 for npc in npcList:
                     # Update delta D
                     curDeltaD = self.findDeltaD(ego, npc)
@@ -273,7 +283,7 @@ class LgApSimulation:
                 fbrLines = fbr.readlines()
                 for line in fbrLines:
                     pass
-            
+
                 while not ego.bridge_connected or "fail" in line or "Fail" in line or "overflow" in line:
                     time.sleep(5)
                     resultDic = {}
@@ -284,8 +294,8 @@ class LgApSimulation:
 
                 sim.run(0.25)
 
-            ####################################    
-            k = 0 # kth npc
+            ####################################
+            k = 0  # kth npc
             for npc in npcList:
                 deltaDList[k][t] = npcDeltaAtTList[k]
                 dList[k][t] = npcDAtTList[k]
@@ -293,12 +303,15 @@ class LgApSimulation:
 
         # Process deltaDList and compute fitness scores
         # Make sure it is not 0, cannot divide by 0 in GA
-        fitness_score = self.findFitness(deltaDList, dList, self.isEgoFault, self.isHit, hitTime)
+        fitness_score = self.findFitness(
+            deltaDList, dList, self.isEgoFault, self.isHit, hitTime)
         resultDic = {}
-        resultDic['fitness'] = (fitness_score + self.maxint) / float(len(npcList) - 1 ) # Try to make sure it is positive
+        # Try to make sure it is positive
+        resultDic['fitness'] = (
+            fitness_score + self.maxint) / float(len(npcList) - 1)
         resultDic['fault'] = ''
         if self.isEgoFault == True:
-                resultDic['fault'] = 'ego'
+            resultDic['fault'] = 'ego'
         util.print_debug(" === Finish simulation === ")
         util.print_debug(resultDic)
 
@@ -306,7 +319,7 @@ class LgApSimulation:
 
 
 ##################################### MAIN ###################################
-# Read scenario obj 
+# Read scenario obj
 objPath = sys.argv[1]
 resPath = sys.argv[2]
 
@@ -328,6 +341,5 @@ if os.path.isfile(resPath) == True:
     os.system("rm " + resPath)
 f_f = open(resPath, 'wb')
 pickle.dump(resultDic, f_f)
-f_f.truncate() 
-f_f.close() 
-
+f_f.truncate()
+f_f.close()
